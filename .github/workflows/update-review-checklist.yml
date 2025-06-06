@@ -12,7 +12,7 @@ jobs:
   update-checklist:
     runs-on: ubuntu-latest
     # セルフレビューを除外
-    # if: github.event.review.user.login != github.event.pull_request.user.login
+    if: github.event.review.user.login != github.event.pull_request.user.login
     steps:
       - name: Update verification checklist
         uses: actions/github-script@v6
