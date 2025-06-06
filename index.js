@@ -1,7 +1,7 @@
 console.log('Hello from test project!')
 
 function greet(name) {
-  console.log('test2')
+  console.log('test3')
   return `Hello, ${name}!`
 }
 
