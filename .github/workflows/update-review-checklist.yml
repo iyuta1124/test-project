@@ -26,7 +26,7 @@ jobs:
               
               const botComments = comments.data.filter(comment => 
                 comment.user.login === 'github-actions[bot]' && 
-                comment.body.includes('📝 修正完了チェック')
+                (comment.body.includes('📝 修正完了チェック') || comment.body.includes('📝 PR作成時のチェック'))
               );
               
               // 過去のコメントを削除
