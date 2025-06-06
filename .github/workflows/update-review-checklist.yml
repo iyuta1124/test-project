@@ -3,6 +3,11 @@ on:
   pull_request:
     types: [opened, synchronize]  # PR作成時と新しいコミット時
 
+permissions:
+  pull-requests: write
+  issues: write
+  contents: read
+
 jobs:
   update-checklist:
     runs-on: ubuntu-latest
