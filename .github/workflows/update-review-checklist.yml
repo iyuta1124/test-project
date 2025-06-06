@@ -11,10 +11,10 @@ permissions:
 jobs:
   update-checklist:
     runs-on: ubuntu-latest
-    # セルフレビューを除外
+    # CHANGES_REQUESTED以外とセルフレビューを除外
     if: |
       github.event.review.user.login != github.event.pull_request.user.login &&
-      github.event.review.state != 'APPROVED'
+      github.event.review.state == 'CHANGES_REQUESTED'
     steps:
       - name: Update verification checklist
         uses: actions/github-script@v6
