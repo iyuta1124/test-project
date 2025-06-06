@@ -18,7 +18,6 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            // 過去の自動生成コメントを削除
             const comments = await github.rest.issues.listComments({
               issue_number: context.issue.number,
               owner: context.repo.owner,
@@ -30,7 +29,7 @@ jobs:
               comment.body.includes('📝 修正完了チェック')
             );
 
-            // 過去のコメントを削除
+            // 過去の自動生成コメントを削除
             for (const comment of botComments) {
               await github.rest.issues.deleteComment({
                 owner: context.repo.owner,
@@ -44,17 +43,12 @@ jobs:
             const shortSha = commitSha.substring(0, 7);
 
             // 新しいチェックリストを追加
-            const newComment = `## 📝 修正完了チェック (${new Date().toLocaleString('ja-JP', {timeZone: 'Asia/Tokyo'})})
+            const newComment = `## 📝 修正完了チェック (**最新のコミット:** \`${shortSha}\`)
 
-            **最新のコミット:** \`${shortSha}\`
+            - [ ] 再修正による劣化が発生していないことを確認した
+            - [ ] レビュワーからの質問または指摘に対して、なんらかのアクションを行なった
 
-            作成者/修正者は以下を確認してください：
-            - [ ] ローカル環境での動作確認済み
-            - [ ] 関連するテストが通ることを確認済み
-            - [ ] 意図した機能/修正が正しく反映されていることを確認済み
-            - [ ] エラーログやコンソールにエラーが出ていないことを確認済み
-
-            ✅ **確認完了後、上記のチェックボックスにすべてチェックを入れてください。**
+            ✅ **上記のチェックボックスにすべてチェックを入れてから再度レビュー依頼をしてください**
 
             ---
             *このコメントは新しいコミットがプッシュされると自動で更新されます。*`;
