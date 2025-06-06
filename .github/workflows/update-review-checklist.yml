@@ -12,7 +12,9 @@ jobs:
   update-checklist:
     runs-on: ubuntu-latest
     # セルフレビューを除外
-    if: github.event.review.user.login != github.event.pull_request.user.login
+    if: |
+      github.event.review.user.login != github.event.pull_request.user.login &&
+      github.event.review.state != 'APPROVED'
     steps:
       - name: Update verification checklist
         uses: actions/github-script@v6
@@ -26,7 +28,7 @@ jobs:
 
             const botComments = comments.data.filter(comment => 
               comment.user.login === 'github-actions[bot]' && 
-              comment.body.includes('📝 修正完了チェック')
+              comment.body.includes('📝 再修正完了チェック')
             );
 
             // 過去の自動生成コメントを削除
@@ -43,10 +45,10 @@ jobs:
             const shortSha = commitSha.substring(0, 7);
 
             // 新しいチェックリストを追加
-            const newComment = `## 📝 修正完了チェック (**最新のコミット:** \`${shortSha}\`)
+            const newComment = `## 📝 再修正完了チェック (**最新のコミット:** \`${shortSha}\`)
 
             - [ ] 再修正による劣化が発生していないことを確認した
-            - [ ] レビュワーからの指摘に対して対応漏れがないことを確認した
+            - [ ] レビュワーからの指摘に対して、対応漏れがないことを確認した
             - [ ] 対応不要と判断した指摘に対して、その旨をレビュワーに伝えた
 
             ✅ **上記のチェックボックスにすべてチェックを入れてから再度レビュー依頼をしてください**
