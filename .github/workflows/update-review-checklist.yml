@@ -1,7 +1,7 @@
 name: Update Review Checklist
 on:
-  pull_request:
-    types: [synchronize]  # 新しいコミット時のみ
+  pull_request_review:
+    types: [submitted] # レビューが提出された時のみ
 
 permissions:
   pull-requests: write
@@ -11,6 +11,8 @@ permissions:
 jobs:
   update-checklist:
     runs-on: ubuntu-latest
+    # セルフレビューを除外
+    # if: github.event.review.user.login != github.event.pull_request.user.login
     steps:
       - name: Update verification checklist
         uses: actions/github-script@v6
@@ -22,12 +24,12 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
             });
-            
+
             const botComments = comments.data.filter(comment => 
               comment.user.login === 'github-actions[bot]' && 
               comment.body.includes('📝 修正完了チェック')
             );
-            
+
             // 過去のコメントを削除
             for (const comment of botComments) {
               await github.rest.issues.deleteComment({
@@ -36,27 +38,27 @@ jobs:
                 comment_id: comment.id,
               });
             }
-            
+
             // コミット情報を取得
             const commitSha = context.payload.pull_request.head.sha;
             const shortSha = commitSha.substring(0, 7);
-            
+
             // 新しいチェックリストを追加
             const newComment = `## 📝 修正完了チェック (${new Date().toLocaleString('ja-JP', {timeZone: 'Asia/Tokyo'})})
-            
+
             **最新のコミット:** \`${shortSha}\`
-            
+
             作成者/修正者は以下を確認してください：
             - [ ] ローカル環境での動作確認済み
             - [ ] 関連するテストが通ることを確認済み
             - [ ] 意図した機能/修正が正しく反映されていることを確認済み
             - [ ] エラーログやコンソールにエラーが出ていないことを確認済み
-            
+
             ✅ **確認完了後、上記のチェックボックスにすべてチェックを入れてください。**
-            
+
             ---
             *このコメントは新しいコミットがプッシュされると自動で更新されます。*`;
-            
+
             await github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
