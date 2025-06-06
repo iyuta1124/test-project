@@ -11,7 +11,7 @@ permissions:
 jobs:
   update-checklist:
     runs-on: ubuntu-latest
-    # APPROVEDとセルフレビューを除外
+    # CHANGES_REQUESTED以外とセルフレビューを除外
     if: |
       github.event.review.user.login != github.event.pull_request.user.login &&
       github.event.review.state == 'CHANGES_REQUESTED'
