@@ -1,0 +1,67 @@
+name: Update Review Checklist
+on:
+  pull_request:
+    types: [opened, synchronize]  # PR作成時と新しいコミット時
+
+jobs:
+  update-checklist:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update verification checklist
+        uses: actions/github-script@v6
+        with:
+          script: |
+            // 過去の自動生成コメントを削除（PR作成後のコミット時のみ）
+            if (context.payload.action === 'synchronize') {
+              const comments = await github.rest.issues.listComments({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+              });
+              
+              const botComments = comments.data.filter(comment => 
+                comment.user.login === 'github-actions[bot]' && 
+                comment.body.includes('📝 修正完了チェック')
+              );
+              
+              // 過去のコメントを削除
+              for (const comment of botComments) {
+                await github.rest.issues.deleteComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: comment.id,
+                });
+              }
+            }
+            
+            // コミット情報を取得
+            const commitSha = context.payload.pull_request.head.sha;
+            const shortSha = commitSha.substring(0, 7);
+            
+            // アクションに応じたメッセージ
+            const actionText = context.payload.action === 'opened' 
+              ? 'PR作成時のチェック' 
+              : '修正完了チェック';
+            
+            // 新しいチェックリストを追加
+            const newComment = `## 📝 ${actionText} (${new Date().toLocaleString('ja-JP', {timeZone: 'Asia/Tokyo'})})
+            
+            **最新のコミット:** \`${shortSha}\`
+            
+            作成者/修正者は以下を確認してください：
+            - [ ] ローカル環境での動作確認済み
+            - [ ] 関連するテストが通ることを確認済み
+            - [ ] 意図した機能/修正が正しく反映されていることを確認済み
+            - [ ] エラーログやコンソールにエラーが出ていないことを確認済み
+            
+            ✅ **確認完了後、上記のチェックボックスにすべてチェックを入れてください。**
+            
+            ---
+            *このコメントは新しいコミットがプッシュされると自動で更新されます。*`;
+            
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: newComment
+            });
