@@ -51,7 +51,7 @@ jobs:
             // PRの情報を取得
             const { data: pr } = await github.rest.pulls.get({
               owner: context.repo.owner,
-              repo: context.repo.repo,
+              repo: context.repo.repo,git p
               pull_number: prNumber,
             });
 
