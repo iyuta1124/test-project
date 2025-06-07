@@ -1,0 +1,110 @@
+name: Check Review Checklist Status
+on:
+  issue_comment:
+    types: [created, edited]
+  pull_request_review:
+    types: [submitted]
+
+permissions:
+  pull-requests: write
+  issues: write
+  contents: read
+  statuses: write
+  checks: write
+
+jobs:
+  check-checklist-status:
+    runs-on: ubuntu-latest
+    if: github.event.issue.pull_request || github.event.pull_request
+    steps:
+      - name: Check checklist completion
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const prNumber = context.issue?.number || context.payload.pull_request.number;
+
+            // PRのコメントを取得
+            const comments = await github.rest.issues.listComments({
+              issue_number: prNumber,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+
+            // 最新のチェックリストコメントを見つける
+            const checklistComment = comments.data
+              .filter(comment => 
+                comment.user.login === 'github-actions[bot]' && 
+                comment.body.includes('📝 再修正完了チェック')
+              )
+              .pop(); // 最新のコメントを取得
+
+            if (!checklistComment) {
+              return;
+            }
+
+            // チェックボックスの状態を確認
+            const checkboxes = checklistComment.body.match(/- \[([ x])\]/g) || [];
+            const totalCheckboxes = checkboxes.length;
+            const checkedBoxes = checkboxes.filter(box => box.includes('[x]')).length;
+
+
+            // PRの情報を取得
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+            });
+
+            const allChecked = totalCheckboxes > 0 && checkedBoxes === totalCheckboxes;
+
+            // Status Check を作成
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: pr.head.sha,
+              state: allChecked ? 'success' : 'failure',
+              target_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/pull/${prNumber}`,
+              description: allChecked 
+                ? 'All checklist items completed' 
+                : `Checklist incomplete: ${checkedBoxes}/${totalCheckboxes} items checked`,
+              context: 'review-checklist'
+            });
+
+            // PRにラベルを追加/削除（オプション）
+            if (allChecked) {
+              try {
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: prNumber,
+                  name: 'checklist-incomplete'
+                });
+              } catch (e) {
+                // ラベルが存在しない場合は無視
+              }
+              
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                labels: ['checklist-complete']
+              });
+            } else {
+              try {
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: prNumber,
+                  name: 'checklist-complete'
+                });
+              } catch (e) {
+                // ラベルが存在しない場合は無視
+              }
+              
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                labels: ['checklist-incomplete']
+              });
+            }
