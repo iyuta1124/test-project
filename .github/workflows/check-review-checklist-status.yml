@@ -39,6 +39,7 @@ jobs:
               .pop(); // 最新のコメントを取得
 
             if (!checklistComment) {
+              console.log('No checklist found');
               return;
             }
 
@@ -47,11 +48,12 @@ jobs:
             const totalCheckboxes = checkboxes.length;
             const checkedBoxes = checkboxes.filter(box => box.includes('[x]')).length;
 
+            console.log(`Checked: ${checkedBoxes}/${totalCheckboxes}`);
 
             // PRの情報を取得
             const { data: pr } = await github.rest.pulls.get({
               owner: context.repo.owner,
-              repo: context.repo.repo,git p
+              repo: context.repo.repo,
               pull_number: prNumber,
             });
 
