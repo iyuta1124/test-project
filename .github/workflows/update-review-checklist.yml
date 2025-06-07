@@ -1,7 +1,5 @@
 name: Update Review Checklist
 on:
-  pull_request_review:
-    types: [submitted]
   pull_request:
     types: [synchronize]
 
@@ -14,23 +12,14 @@ jobs:
   update-checklist:
     runs-on: ubuntu-latest
     # CHANGES_REQUESTEDを受けた後のコミット、またはCHANGES_REQUESTEDレビュー時のみ実行
-    if: |
-      (github.event_name == 'pull_request_review' && 
-       github.event.review.user.login != github.event.pull_request.user.login &&
-       github.event.review.state == 'CHANGES_REQUESTED') ||
-      (github.event_name == 'pull_request' && 
-       github.event.action == 'synchronize')
+    if: github.event_name == 'pull_request' && github.event.action == 'synchronize'
     steps:
       - name: Check if checklist is needed
         id: check-need
         uses: actions/github-script@v6
         with:
           script: |
-            if (context.eventName === 'pull_request_review') {
-              return true;  // レビュー時は必ず実行
-            }
-
-            // コミット時は過去にCHANGES_REQUESTEDがあった場合のみ実行
+            // 過去にCHANGES_REQUESTEDがあった場合のみ実行
             const reviews = await github.rest.pulls.listReviews({
               owner: context.repo.owner,
               repo: context.repo.repo,
