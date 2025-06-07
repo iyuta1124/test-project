@@ -1,7 +1,7 @@
 name: Update Review Checklist
 on:
-  pull_request_review:
-    types: [submitted] # レビューが提出された時のみ
+  pull_request:
+    types: [synchronize]
 
 permissions:
   pull-requests: write
@@ -11,12 +11,29 @@ permissions:
 jobs:
   update-checklist:
     runs-on: ubuntu-latest
-    # CHANGES_REQUESTED以外とセルフレビューを除外
-    if: |
-      github.event.review.user.login != github.event.pull_request.user.login &&
-      github.event.review.state == 'CHANGES_REQUESTED'
+    # CHANGES_REQUESTEDを受けた後のコミット、またはCHANGES_REQUESTEDレビュー時のみ実行
+    if: github.event_name == 'pull_request' && github.event.action == 'synchronize'
     steps:
+      - name: Check if checklist is needed
+        id: check-need
+        uses: actions/github-script@v6
+        with:
+          script: |
+            // 過去にCHANGES_REQUESTEDがあった場合のみ実行
+            const reviews = await github.rest.pulls.listReviews({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+            });
+
+            const hasChangesRequested = reviews.data.some(review => 
+              review.state === 'CHANGES_REQUESTED'
+            );
+
+            return hasChangesRequested;
+
       - name: Update verification checklist
+        if: steps.check-need.outputs.result == 'true'
         uses: actions/github-script@v6
         with:
           script: |
@@ -49,7 +66,7 @@ jobs:
 
             - [ ] 再修正後の動作確認を実施し、劣化が発生していないことを確認した
             - [ ] レビュワーからの指摘に対して、対応漏れがないことを確認した
-            - [ ] 対応不要と判断した指摘がある場合、判断理由を明記して返信した
+            - [ ] 対応不要と判断した指摘がある場合、理由を明記して返信した
 
             ✅ **上記のチェックボックスにすべてチェックを入れてから再度レビュー依頼をしてください**
 

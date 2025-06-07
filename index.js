@@ -1,8 +1,7 @@
 console.log('Hello from test project!')
 
 function greet(name) {
-  console.log('test3')
+  console.log('test6')
   return `Hello, ${name}!`
 }
-
-module.exports = { greet }
+git
